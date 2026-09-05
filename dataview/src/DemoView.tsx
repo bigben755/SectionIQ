@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import L from 'leaflet'
 import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
+import DemoLiveJourney from './DemoLiveJourney'
 
 type Props = {
   email: string
@@ -58,6 +59,12 @@ function FitDemo() {
 }
 
 export default function DemoView({ email, role, onExit, onSignOut }: Props) {
+  const [dataset, setDataset] = useState<'capability' | '1N53'>('capability')
+
+  if (dataset === '1N53') {
+    return <DemoLiveJourney email={email} role={role} onExit={onExit} onSignOut={onSignOut} onShowCapability={() => setDataset('capability')} />
+  }
+
   const segments = calls.slice(0,-1).map((call,index) => ({
     from:[call.lat,call.lon] as [number,number],
     to:[calls[index+1].lat,calls[index+1].lon] as [number,number],
@@ -68,7 +75,7 @@ export default function DemoView({ email, role, onExit, onSignOut }: Props) {
     <div className="app-shell demo-shell">
       <header className="topbar">
         <div className="brand brand-compact"><img src="./sectioniq-logo.png" alt="SectionIQ" /><div><strong>SectionIQ</strong></div></div>
-        <nav><button className="demo-nav-button active" onClick={onExit}>← Live DataView</button><span className="demo-mode-pill">DEMO MODE</span></nav>
+        <nav><button className="demo-nav-button active" onClick={onExit}>← Live DataView</button><button className="demo-nav-button actual-demo-link" onClick={() => setDataset('1N53')}>1N53 actual live test</button><span className="demo-mode-pill">DEMO MODE</span></nav>
         <div className="user-menu"><span>{email}</span><small>{role}</small><button onClick={onSignOut}>Sign out</button></div>
       </header>
 
