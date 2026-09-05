@@ -311,6 +311,35 @@ fun SectionIQHomeScreen() {
 
     /*
      * ---------------------------------------------------------
+     * HEADCODE / SIGNALLING ID
+     * ---------------------------------------------------------
+     */
+
+    var headcode by remember {
+
+        mutableStateOf(
+            sectionPreferences
+                .getString(
+                    "last_headcode",
+                    ""
+                )
+                ?: ""
+        )
+    }
+
+
+    val headcodeValid =
+
+        Regex(
+            "^[0-9][A-Z][0-9]{2}$"
+        )
+            .matches(
+                headcode
+            )
+
+
+    /*
+     * ---------------------------------------------------------
      * DEVICE
      * ---------------------------------------------------------
      */
