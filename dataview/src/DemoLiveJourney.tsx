@@ -315,7 +315,7 @@ export default function DemoLiveJourney({ email, role, onExit, onSignOut, onShow
             <div className="panel-heading"><div><p className="eyebrow">Recorded performance events</p><h2>Machine-generated evidence</h2></div></div>
             <div className="train-ahead-list">
               {events.map((event) => <article key={event.id}>
-                <strong>{event.location_name ?? event.event_type.replaceAll('_', ' ')}</strong>
+                <strong>{event.location_name ?? event.event_type.replace(/_/g, ' ')}</strong>
                 <span>{event.summary ?? 'Recorded SectionIQ performance event'}</span>
                 <small>Confidence {event.confidence != null ? `${Math.round(event.confidence * 100)}%` : '—'}{event.estimated_impact_seconds != null ? ` · impact ${fmtVariance(event.estimated_impact_seconds)}` : ''}</small>
               </article>)}
