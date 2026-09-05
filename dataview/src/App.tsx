@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import JourneyMap from './JourneyMap'
+import DemoView from './DemoView'
 
 type Journey = {
   id: string
@@ -123,6 +124,7 @@ function App() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [demoMode, setDemoMode] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -227,6 +229,10 @@ function App() {
     )
   }
 
+  if (demoMode) {
+    return <DemoView email={session.user.email ?? ''} role={role} onExit={() => setDemoMode(false)} onSignOut={() => supabase.auth.signOut()} />
+  }
+
   const completeCount = journeys.filter((j) => j.status === 'complete').length
   const matchedCount = Object.keys(matches).length
   const selected = journeys.find((j) => j.id === selectedId) ?? null
@@ -236,14 +242,14 @@ function App() {
     <div className="app-shell">
       <header className="topbar">
         <Logo compact />
-        <nav><a className="active" href="#overview">Overview</a><a href="#journeys">Journeys</a><a href="#performance">Performance</a><a href="#pathfinder">Pathfinder</a></nav>
+        <nav><a className="active" href="#overview">Overview</a><a href="#journeys">Journeys</a><a href="#performance">Performance</a><a href="#pathfinder">Pathfinder</a><button className="demo-nav-button" onClick={() => setDemoMode(true)}>Demo</button></nav>
         <div className="user-menu"><span>{session.user.email}</span><small>{role}</small><button onClick={() => supabase.auth.signOut()}>Sign out</button></div>
       </header>
 
       <main className="content">
         <section className="page-heading" id="overview">
           <div><p className="eyebrow">Operational evidence</p><h1>SectionIQ DataView</h1><p>Review recorded journeys, service matches and manager observations.</p></div>
-          <button className="secondary-button" onClick={loadJourneys} disabled={loading}>{loading ? 'Refreshing…' : 'Refresh data'}</button>
+          <div className="heading-actions"><button className="secondary-button demo-open-button" onClick={() => setDemoMode(true)}>Open demo journey</button><button className="secondary-button" onClick={loadJourneys} disabled={loading}>{loading ? 'Refreshing…' : 'Refresh data'}</button></div>
         </section>
 
         <section className="metric-grid">
