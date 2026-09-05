@@ -76,6 +76,14 @@ data class JourneyPoint(
 
     val speedAvailable: Boolean,
 
+    val speedAccuracyMetresPerSecond: Float?,
+
+    val elapsedRealtimeNanos: Long,
+
+    val bearingAccuracyDegrees: Float?,
+
+    val verticalAccuracyMetres: Float?,
+
     val bearingDegrees: Float,
 
     val altitudeMetres: Double?
@@ -2189,6 +2197,29 @@ fun appendJourneyPoint(
                     JSONObject.NULL
                 )
             }
+
+            put(
+                "speed_accuracy_mps",
+                point.speedAccuracyMetresPerSecond
+                    ?: JSONObject.NULL
+            )
+
+            put(
+                "elapsed_realtime_nanos",
+                point.elapsedRealtimeNanos
+            )
+
+            put(
+                "bearing_accuracy_deg",
+                point.bearingAccuracyDegrees
+                    ?: JSONObject.NULL
+            )
+
+            put(
+                "vertical_accuracy_m",
+                point.verticalAccuracyMetres
+                    ?: JSONObject.NULL
+            )
 
             put(
                 "bearing_deg",

@@ -97,6 +97,21 @@ private data class CloudJourneyPointInsert(
     @SerialName("speed_mps")
     val speedMetresPerSecond: Float?,
 
+    @SerialName("speed_available")
+    val speedAvailable: Boolean?,
+
+    @SerialName("speed_accuracy_mps")
+    val speedAccuracyMetresPerSecond: Float?,
+
+    @SerialName("elapsed_realtime_nanos")
+    val elapsedRealtimeNanos: Long?,
+
+    @SerialName("bearing_accuracy_deg")
+    val bearingAccuracyDegrees: Float?,
+
+    @SerialName("vertical_accuracy_m")
+    val verticalAccuracyMetres: Float?,
+
     @SerialName("bearing_deg")
     val bearingDegrees: Float?,
 
@@ -128,6 +143,21 @@ private data class CloudJourneyPointRow(
 
     @SerialName("speed_mps")
     val speedMetresPerSecond: Float? = null,
+
+    @SerialName("speed_available")
+    val speedAvailable: Boolean? = null,
+
+    @SerialName("speed_accuracy_mps")
+    val speedAccuracyMetresPerSecond: Float? = null,
+
+    @SerialName("elapsed_realtime_nanos")
+    val elapsedRealtimeNanos: Long? = null,
+
+    @SerialName("bearing_accuracy_deg")
+    val bearingAccuracyDegrees: Float? = null,
+
+    @SerialName("vertical_accuracy_m")
+    val verticalAccuracyMetres: Float? = null,
 
     @SerialName("bearing_deg")
     val bearingDegrees: Float? = null,
@@ -263,6 +293,16 @@ private data class ParsedJourneyPoint(
     val accuracyMetres: Float?,
 
     val speedMetresPerSecond: Float?,
+
+    val speedAvailable: Boolean?,
+
+    val speedAccuracyMetresPerSecond: Float?,
+
+    val elapsedRealtimeNanos: Long?,
+
+    val bearingAccuracyDegrees: Float?,
+
+    val verticalAccuracyMetres: Float?,
 
     val bearingDegrees: Float?,
 
@@ -513,6 +553,21 @@ object JourneyUploader {
                             speedMetresPerSecond =
                                 point
                                     .speedMetresPerSecond,
+
+                            speedAvailable =
+                                point.speedAvailable,
+
+                            speedAccuracyMetresPerSecond =
+                                point.speedAccuracyMetresPerSecond,
+
+                            elapsedRealtimeNanos =
+                                point.elapsedRealtimeNanos,
+
+                            bearingAccuracyDegrees =
+                                point.bearingAccuracyDegrees,
+
+                            verticalAccuracyMetres =
+                                point.verticalAccuracyMetres,
 
                             bearingDegrees =
                                 point.bearingDegrees,
@@ -1132,6 +1187,46 @@ object JourneyUploader {
                         )
 
 
+                    val speedAvailable =
+
+                        optionalBoolean(
+                            json,
+                            "speed_available"
+                        )
+
+
+                    val speedAccuracy =
+
+                        optionalFloat(
+                            json,
+                            "speed_accuracy_mps"
+                        )
+
+
+                    val elapsedRealtimeNanos =
+
+                        optionalLong(
+                            json,
+                            "elapsed_realtime_nanos"
+                        )
+
+
+                    val bearingAccuracy =
+
+                        optionalFloat(
+                            json,
+                            "bearing_accuracy_deg"
+                        )
+
+
+                    val verticalAccuracy =
+
+                        optionalFloat(
+                            json,
+                            "vertical_accuracy_m"
+                        )
+
+
                     val bearing =
 
                         optionalFloat(
@@ -1164,6 +1259,21 @@ object JourneyUploader {
 
                             speedMetresPerSecond =
                                 speed,
+
+                            speedAvailable =
+                                speedAvailable,
+
+                            speedAccuracyMetresPerSecond =
+                                speedAccuracy,
+
+                            elapsedRealtimeNanos =
+                                elapsedRealtimeNanos,
+
+                            bearingAccuracyDegrees =
+                                bearingAccuracy,
+
+                            verticalAccuracyMetres =
+                                verticalAccuracy,
 
                             bearingDegrees =
                                 bearing,
@@ -1390,6 +1500,22 @@ object JourneyUploader {
      * JSON OPTIONAL HELPERS
      * ---------------------------------------------------------
      */
+
+    private fun optionalBoolean(
+        json: JSONObject,
+        key: String
+    ): Boolean? {
+
+        return if (
+            json.has(key) &&
+            !json.isNull(key)
+        ) {
+            json.getBoolean(key)
+        } else {
+            null
+        }
+    }
+
 
     private fun optionalFloat(
         json: JSONObject,

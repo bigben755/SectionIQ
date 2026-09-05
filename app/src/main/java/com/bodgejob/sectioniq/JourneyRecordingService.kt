@@ -535,6 +535,49 @@ class JourneyRecordingService : Service() {
 
                                         hasSpeed,
 
+                                    speedAccuracyMetresPerSecond =
+
+                                        if (
+                                            location.hasSpeedAccuracy()
+                                        ) {
+
+                                            location.speedAccuracyMetersPerSecond
+
+                                        } else {
+
+                                            null
+                                        },
+
+                                    elapsedRealtimeNanos =
+
+                                        location.elapsedRealtimeNanos,
+
+                                    bearingAccuracyDegrees =
+
+                                        if (
+                                            location.hasBearingAccuracy()
+                                        ) {
+
+                                            location.bearingAccuracyDegrees
+
+                                        } else {
+
+                                            null
+                                        },
+
+                                    verticalAccuracyMetres =
+
+                                        if (
+                                            location.hasVerticalAccuracy()
+                                        ) {
+
+                                            location.verticalAccuracyMeters
+
+                                        } else {
+
+                                            null
+                                        },
+
                                     bearingDegrees =
 
                                         if (
