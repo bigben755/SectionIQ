@@ -1,0 +1,32 @@
+name: Fix 1N53 demo build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/fix_demo_live_replace.py'
+      - '.github/workflows/fix-1n53-demo-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Apply fix
+        run: python tools/fix_demo_live_replace.py
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dataview/src/DemoLiveJourney.tsx
+          if git diff --cached --quiet; then
+            echo "No changes required"
+            exit 0
+          fi
+          git commit -m "Fix 1N53 demo build compatibility"
+          git push
