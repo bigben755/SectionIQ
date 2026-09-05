@@ -47,6 +47,9 @@ private data class CloudJourneyInsert(
     @SerialName("point_count")
     val pointCount: Int,
 
+    @SerialName("entered_headcode")
+    val enteredHeadcode: String?,
+
     val status: String
 )
 
@@ -67,6 +70,9 @@ private data class CloudJourneyRow(
 
     @SerialName("point_count")
     val pointCount: Int,
+
+    @SerialName("entered_headcode")
+    val enteredHeadcode: String? = null,
 
     val status: String,
 
@@ -331,6 +337,8 @@ private data class ParsedJourney(
 
     val startedAtMs: Long,
 
+    val enteredHeadcode: String?,
+
     val endedAtMs: Long,
 
     val points:
@@ -539,6 +547,10 @@ object JourneyUploader {
                         parsedJourney
                             .points
                             .size,
+
+                    enteredHeadcode =
+                        parsedJourney
+                            .enteredHeadcode,
 
                     status =
                         "incomplete"
@@ -1376,6 +1388,11 @@ object JourneyUploader {
             null
 
 
+        var enteredHeadcode:
+                String? =
+            null
+
+
         var endedAtMs:
                 Long? =
             null
@@ -1457,6 +1474,36 @@ object JourneyUploader {
                         json.getLong(
                             "started_at_ms"
                         )
+
+
+                    enteredHeadcode =
+
+                        if (
+                            json.has(
+                                "entered_headcode"
+                            ) &&
+                            !json.isNull(
+                                "entered_headcode"
+                            )
+                        ) {
+
+                            json.getString(
+                                "entered_headcode"
+                            )
+                                .trim()
+                                .uppercase()
+                                .takeIf {
+                                    it.matches(
+                                        Regex(
+                                            "^[0-9][A-Z][0-9]{2}$"
+                                        )
+                                    )
+                                }
+
+                        } else {
+
+                            null
+                        }
                 }
 
 
@@ -1996,6 +2043,9 @@ object JourneyUploader {
 
             startedAtMs =
                 finalStartedAt,
+
+            enteredHeadcode =
+                enteredHeadcode,
 
             endedAtMs =
                 finalEndedAt,

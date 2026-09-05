@@ -3015,6 +3015,92 @@ fun SectionIQHomeScreen() {
 
         /*
          * -----------------------------------------------------
+         * HEADCODE / SIGNALLING ID
+         * -----------------------------------------------------
+         */
+
+        if (
+            !isRecording
+        ) {
+
+            OutlinedTextField(
+                value =
+                    headcode,
+
+                onValueChange = { value ->
+
+                    val cleaned =
+                        value
+                            .uppercase(
+                                Locale.UK
+                            )
+                            .filter {
+                                it.isLetterOrDigit()
+                            }
+                            .take(
+                                4
+                            )
+
+                    headcode =
+                        cleaned
+
+                    sectionPreferences
+                        .edit()
+                        .putString(
+                            "last_headcode",
+                            cleaned
+                        )
+                        .apply()
+                },
+
+                label = {
+                    Text(
+                        "Headcode / signalling ID"
+                    )
+                },
+
+                placeholder = {
+                    Text(
+                        "e.g. 1N52"
+                    )
+                },
+
+                supportingText = {
+                    Text(
+                        if (
+                            headcode.isEmpty() ||
+                            headcodeValid
+                        ) {
+                            "Enter the four-character operational headcode"
+                        } else {
+                            "Use a format such as 1N52"
+                        }
+                    )
+                },
+
+                isError =
+                    headcode.isNotEmpty() &&
+                            !headcodeValid,
+
+                singleLine =
+                    true,
+
+                modifier =
+                    Modifier.fillMaxWidth()
+            )
+
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        18.dp
+                    )
+            )
+        }
+
+
+        /*
+         * -----------------------------------------------------
          * START / STOP JOURNEY
          * -----------------------------------------------------
          */
@@ -3025,6 +3111,20 @@ fun SectionIQHomeScreen() {
                 if (
                     !isRecording
                 ) {
+
+                    /*
+                     * Freeze the tester-entered operational headcode into
+                     * this journey before the recording service starts.
+                     */
+                    recordingPreferences
+                        .edit()
+                        .putString(
+                            JourneyRecordingService
+                                .KEY_HEADCODE,
+                            headcode
+                        )
+                        .apply()
+
 
                     /*
                      * Freeze the selected mode into this journey.
@@ -3096,7 +3196,8 @@ fun SectionIQHomeScreen() {
 
                 } else {
 
-                    gpsReady
+                    gpsReady &&
+                            headcodeValid
                 },
 
             modifier =
@@ -3198,6 +3299,11 @@ fun SectionIQHomeScreen() {
 
                         "Ready to record a Pathfinder journey"
 
+                    gpsReady &&
+                            !headcodeValid ->
+
+                        "Enter a valid four-character headcode"
+
                     gpsReady ->
 
                         "Ready to record"
@@ -3234,7 +3340,8 @@ fun SectionIQHomeScreen() {
 fun createJourneyFile(
     context: Context,
     sessionId: String,
-    deviceName: String
+    deviceName: String,
+    headcode: String?
 ): File {
 
     val directory =
@@ -3283,6 +3390,12 @@ fun createJourneyFile(
             put(
                 "device_name",
                 deviceName
+            )
+
+            put(
+                "entered_headcode",
+                headcode
+                    ?: JSONObject.NULL
             )
 
             put(

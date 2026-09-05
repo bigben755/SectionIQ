@@ -68,6 +68,9 @@ class JourneyRecordingService : Service() {
         const val KEY_SESSION_ID =
             "session_id"
 
+        const val KEY_HEADCODE =
+            "headcode"
+
         const val KEY_POINT_COUNT =
             "point_count"
 
@@ -388,7 +391,13 @@ class JourneyRecordingService : Service() {
                     deviceName =
                         getDeviceName(
                             this
-                        )
+                        ),
+                    headcode =
+                        recordingPreferences
+                            .getString(
+                                KEY_HEADCODE,
+                                null
+                            )
                 )
 
 
