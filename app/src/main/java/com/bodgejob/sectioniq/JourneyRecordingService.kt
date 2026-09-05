@@ -41,6 +41,19 @@ class JourneyRecordingService : Service() {
 
         const val ACTION_MARK_EVENT =
             "com.bodgejob.sectioniq.action.MARK_EVENT"
+
+        const val ACTION_COMPLETE_EVENT =
+            "com.bodgejob.sectioniq.action.COMPLETE_EVENT"
+
+        const val EXTRA_EVENT_ID =
+            "event_id"
+
+        const val EXTRA_EVENT_KIND =
+            "event_kind"
+
+        const val EXTRA_EVENT_NOTE =
+            "event_note"
+
         const val ACTION_MARK_STATION =
             "com.bodgejob.sectioniq.action.MARK_STATION"
 
@@ -60,6 +73,10 @@ class JourneyRecordingService : Service() {
 
         const val KEY_EVENT_MARK_COUNT =
             "event_mark_count"
+
+        const val KEY_PENDING_EVENT_ID =
+            "pending_event_id"
+
         const val KEY_STARTED_ELAPSED =
             "started_elapsed"
 
@@ -252,6 +269,26 @@ class JourneyRecordingService : Service() {
             }
 
 
+            ACTION_COMPLETE_EVENT -> {
+
+                completeJourneyEvent(
+                    eventId =
+                        intent.getStringExtra(
+                            EXTRA_EVENT_ID
+                        ),
+
+                    eventKind =
+                        intent.getStringExtra(
+                            EXTRA_EVENT_KIND
+                        ),
+
+                    eventNote =
+                        intent.getStringExtra(
+                            EXTRA_EVENT_NOTE
+                        )
+                )
+            }
+
             ACTION_MARK_STATION -> {
 
                 markPathfinderStation()
@@ -412,7 +449,10 @@ class JourneyRecordingService : Service() {
                     KEY_EVENT_MARK_COUNT,
                     0
                 )
-                .putInt(
+
+                .remove(
+                    KEY_PENDING_EVENT_ID
+                )                .putInt(
                     KEY_PATHFINDER_MARK_COUNT,
                     0
                 )
@@ -757,6 +797,151 @@ class JourneyRecordingService : Service() {
 
     /*
      * ---------------------------------------------------------
+     * MANAGER - COMPLETE EVENT
+     * ---------------------------------------------------------
+     */
+
+    private fun completeJourneyEvent(
+        eventId: String?,
+        eventKind: String?,
+        eventNote: String?
+    ) {
+
+        if (
+            !isCurrentlyRecording()
+        ) {
+            return
+        }
+
+
+        val id =
+
+            eventId
+                ?.takeIf {
+                    it.isNotBlank()
+                }
+                ?: return
+
+
+        val kind =
+
+            when (
+                eventKind
+            ) {
+
+                "station_call",
+                "running_event",
+                "train_issue",
+                "other" ->
+                    eventKind
+
+                else ->
+                    "other"
+            }
+
+
+        val file =
+            currentJourneyFile
+                ?: return
+
+
+        val record =
+
+            JSONObject().apply {
+
+                put(
+                    "record_type",
+                    "journey_observation_complete"
+                )
+
+                put(
+                    "schema_version",
+                    1
+                )
+
+                put(
+                    "observation_id",
+                    id
+                )
+
+                put(
+                    "completed_at_ms",
+                    System.currentTimeMillis()
+                )
+
+                put(
+                    "event_kind",
+                    kind
+                )
+
+                put(
+                    "free_text",
+
+                    eventNote
+                        ?.trim()
+                        ?.takeIf {
+                            it.isNotEmpty()
+                        }
+                        ?: JSONObject.NULL
+                )
+
+                put(
+                    "entry_status",
+                    "complete"
+                )
+            }
+
+
+        try {
+
+            file.appendText(
+                record.toString() +
+                        "\n"
+            )
+
+
+            val pendingEventId =
+
+                recordingPreferences
+                    .getString(
+                        KEY_PENDING_EVENT_ID,
+                        null
+                    )
+
+
+            if (
+                pendingEventId ==
+                id
+            ) {
+
+                recordingPreferences
+                    .edit()
+                    .remove(
+                        KEY_PENDING_EVENT_ID
+                    )
+                    .apply()
+            }
+
+
+            Log.d(
+                "SectionIQObservation",
+                "Event completed: $id"
+            )
+
+        } catch (
+            e: Exception
+        ) {
+
+            Log.e(
+                "SectionIQObservation",
+                "Failed to complete event",
+                e
+            )
+        }
+    }
+
+    /*
+     * ---------------------------------------------------------
      * MANAGER - MARK EVENT
      * ---------------------------------------------------------
      */
@@ -961,7 +1146,11 @@ class JourneyRecordingService : Service() {
                     KEY_EVENT_MARK_COUNT,
                     eventMarkCount
                 )
-                .apply()
+
+                .putString(
+                    KEY_PENDING_EVENT_ID,
+                    markId
+                )                .apply()
 
 
             updateNotification()

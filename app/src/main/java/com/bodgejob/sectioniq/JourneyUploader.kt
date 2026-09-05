@@ -204,7 +204,13 @@ private data class CloudJourneyObservationInsert(
     val eventKind: String,
 
     @SerialName("evidence_source")
-    val evidenceSource: String
+    val evidenceSource: String,
+
+    @SerialName("free_text")
+    val freeText: String? = null,
+
+    @SerialName("completed_at")
+    val completedAt: String? = null
 )
 
 
@@ -386,7 +392,11 @@ private data class ParsedJourneyObservation(
 
     val eventKind: String,
 
-    val evidenceSource: String
+    val evidenceSource: String,
+
+    val freeText: String? = null,
+
+    val completedAtMs: Long? = null
 )
 
 private data class ParsedPathfinderMark(
@@ -840,7 +850,18 @@ object JourneyUploader {
                                 observation.eventKind,
 
                             evidenceSource =
-                                observation.evidenceSource
+                                observation.evidenceSource,
+
+                            freeText =
+                                observation.freeText,
+
+                            completedAt =
+                                observation.completedAtMs
+                                    ?.let {
+                                        instantString(
+                                            it
+                                        )
+                                    }
                         )
                     }
 
@@ -1379,6 +1400,14 @@ object JourneyUploader {
                     >()
 
 
+        val observationCompletions =
+
+            mutableMapOf<
+                    String,
+                    Triple<String, String?, Long>
+                    >()
+
+
         val pathfinderMarks =
 
             mutableListOf<
@@ -1637,6 +1666,69 @@ object JourneyUploader {
                  * ---------------------------------------------
                  */
 
+                /*
+                 * ---------------------------------------------
+                 * MANAGER OBSERVATION COMPLETION
+                 * ---------------------------------------------
+                 */
+
+                "journey_observation_complete" -> {
+
+                    val observationId =
+
+                        json.getString(
+                            "observation_id"
+                        )
+
+
+                    val completionKind =
+
+                        json.optString(
+                            "event_kind",
+                            "other"
+                        )
+
+
+                    val completionText =
+
+                        if (
+                            json.has(
+                                "free_text"
+                            ) &&
+                            !json.isNull(
+                                "free_text"
+                            )
+                        ) {
+
+                            json.getString(
+                                "free_text"
+                            )
+
+                        } else {
+
+                            null
+                        }
+
+
+                    val completedAtMs =
+
+                        json.getLong(
+                            "completed_at_ms"
+                        )
+
+
+                    observationCompletions[
+                        observationId
+                    ] =
+
+                        Triple(
+                            completionKind,
+                            completionText,
+                            completedAtMs
+                        )
+                }
+
+
                 "pathfinder_station_mark" -> {
 
                     val stationId =
@@ -1733,6 +1825,81 @@ object JourneyUploader {
                         )
                 }
             }
+        }
+
+
+        /*
+         * Apply any live completion record to its original
+         * observation mark.
+         */
+        val mergedObservations =
+
+            observations
+                .map { observation ->
+
+                    val completion =
+
+                        observationCompletions[
+                            observation.id
+                        ]
+
+
+                    if (
+                        completion ==
+                        null
+                    ) {
+
+                        observation
+
+                    } else {
+
+                        observation.copy(
+
+                            entryStatus =
+                                "complete",
+
+                            eventKind =
+                                completion.first,
+
+                            freeText =
+                                completion.second,
+
+                            completedAtMs =
+                                completion.third
+                        )
+                    }
+                }
+
+
+        /*
+         * A completion must always refer to an observation
+         * that exists in this same journey file.
+         */
+        val observationIds =
+
+            observations
+                .map {
+                    it.id
+                }
+                .toSet()
+
+
+        val orphanCompletionIds =
+
+            observationCompletions
+                .keys -
+                    observationIds
+
+
+        if (
+            orphanCompletionIds
+                .isNotEmpty()
+        ) {
+
+            error(
+                "Journey contains completion records " +
+                        "without matching observation marks"
+            )
         }
 
 
@@ -1837,7 +2004,7 @@ object JourneyUploader {
                 points,
 
             observations =
-                observations,
+                mergedObservations,
             pathfinderMarks =
                 pathfinderMarks
         )

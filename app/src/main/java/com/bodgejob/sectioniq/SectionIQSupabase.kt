@@ -29,6 +29,42 @@ data class PathfinderDeviceEntitlement(
 )
 
 
+@Serializable
+data class JourneyObservation(
+
+    val id: String,
+
+    @SerialName("journey_id")
+    val journeyId: String,
+
+    @SerialName("device_id")
+    val deviceId: String,
+
+    @SerialName("observed_at")
+    val observedAt: String,
+
+    val latitude: Double? = null,
+
+    val longitude: Double? = null,
+
+    @SerialName("accuracy_m")
+    val accuracyMetres: Float? = null,
+
+    @SerialName("free_text")
+    val freeText: String? = null,
+
+    @SerialName("entry_status")
+    val entryStatus: String,
+
+    @SerialName("event_kind")
+    val eventKind: String,
+
+    @SerialName("evidence_source")
+    val evidenceSource: String,
+
+    val source: String
+)
+
 object SectionIQSupabase {
 
     val client = createSupabaseClient(
@@ -99,6 +135,114 @@ object SectionIQSupabase {
             )
     }
 
+
+    /*
+     * ---------------------------------------------------------
+     * PENDING MANAGER OBSERVATIONS
+     * ---------------------------------------------------------
+     */
+
+    suspend fun completeObservation(
+        observationId: String,
+        eventKind: String,
+        freeText: String
+    ) {
+
+        val device =
+            registerDevice()
+
+
+        client.postgrest[
+            "journey_observations"
+        ]
+            .update(
+                {
+
+                    set(
+                        "event_kind",
+                        eventKind
+                    )
+
+                    set(
+                        "free_text",
+                        freeText
+                            .trim()
+                            .ifBlank {
+                                null
+                            }
+                    )
+
+                    set(
+                        "entry_status",
+                        "complete"
+                    )
+
+                    set(
+                        "completed_at",
+                        java.time.Instant
+                            .now()
+                            .toString()
+                    )
+                }
+            ) {
+
+                filter {
+
+                    eq(
+                        "id",
+                        observationId
+                    )
+
+                    eq(
+                        "device_id",
+                        device.id
+                    )
+
+                    eq(
+                        "entry_status",
+                        "marked"
+                    )
+                }
+            }
+    }
+
+    suspend fun getMarkedObservations():
+        List<JourneyObservation> {
+
+        val device =
+            registerDevice()
+
+
+        val rows =
+
+            client.postgrest[
+                "journey_observations"
+            ]
+                .select {
+
+                    filter {
+
+                        eq(
+                            "device_id",
+                            device.id
+                        )
+
+                        eq(
+                            "entry_status",
+                            "marked"
+                        )
+                    }
+                }
+                .decodeList<
+                    JourneyObservation
+                    >()
+
+
+        return rows
+            .sortedBy {
+                it.observedAt
+            }
+    }
 
     /*
      * ---------------------------------------------------------

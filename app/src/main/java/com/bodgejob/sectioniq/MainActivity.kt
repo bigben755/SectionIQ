@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,6 +39,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -236,6 +238,52 @@ fun SectionIQHomeScreen() {
 
     val context =
         LocalContext.current
+
+
+    val observationScope =
+        rememberCoroutineScope()
+
+
+    var pendingObservations by remember {
+        mutableStateOf<List<JourneyObservation>>(
+            emptyList()
+        )
+    }
+
+
+    var pendingObservationsLoaded by remember {
+        mutableStateOf(
+            false
+        )
+    }
+
+
+    var pendingObservationsLoading by remember {
+        mutableStateOf(
+            false
+        )
+    }
+
+
+    var selectedObservationKind by remember {
+        mutableStateOf(
+            "other"
+        )
+    }
+
+
+    var observationNote by remember {
+        mutableStateOf(
+            ""
+        )
+    }
+
+
+    var observationError by remember {
+        mutableStateOf<String?>(
+            null
+        )
+    }
 
 
     val sectionPreferences =
@@ -772,6 +820,28 @@ fun SectionIQHomeScreen() {
     }
 
 
+    var pendingEventId by remember {
+
+        mutableStateOf(
+
+            recordingPreferences
+                .getString(
+                    JourneyRecordingService
+                        .KEY_PENDING_EVENT_ID,
+                    null
+                )
+        )
+    }
+
+
+    var dismissedLiveEventId by remember {
+
+        mutableStateOf<String?>(
+            null
+        )
+    }
+
+
     var savedJourneyCount by remember {
 
         mutableStateOf(
@@ -835,6 +905,16 @@ fun SectionIQHomeScreen() {
                         JourneyRecordingService
                             .KEY_EVENT_MARK_COUNT,
                         0
+                    )
+
+
+            pendingEventId =
+
+                recordingPreferences
+                    .getString(
+                        JourneyRecordingService
+                            .KEY_PENDING_EVENT_ID,
+                        null
                     )
 
 
@@ -996,6 +1076,462 @@ fun SectionIQHomeScreen() {
      * UI
      * ---------------------------------------------------------
      */
+
+    /*
+     * ---------------------------------------------------------
+     * LIVE EVENT EDITOR
+     * ---------------------------------------------------------
+     */
+
+    if (
+        isRecording &&
+        pendingEventId != null &&
+        pendingEventId != dismissedLiveEventId
+    ) {
+
+        val liveEventId =
+            pendingEventId
+
+
+        Column(
+            modifier =
+
+                Modifier
+                    .fillMaxSize()
+                    .padding(
+                        horizontal =
+                            22.dp,
+                        vertical =
+                            28.dp
+                    ),
+
+            horizontalAlignment =
+                Alignment.CenterHorizontally
+        ) {
+
+
+            Text(
+                text =
+                    "Event marked",
+
+                fontSize =
+                    28.sp,
+
+                fontWeight =
+                    FontWeight.Bold,
+
+                color =
+                    Color(0xFF12263A)
+            )
+
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        4.dp
+                    )
+            )
+
+
+            Text(
+                text =
+                    "Journey recording continues",
+
+                fontSize =
+                    13.sp,
+
+                color =
+                    Color(0xFF178447)
+            )
+
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        18.dp
+                    )
+            )
+
+
+            Text(
+                text =
+                    "What happened?",
+
+                fontSize =
+                    16.sp,
+
+                fontWeight =
+                    FontWeight.Bold,
+
+                modifier =
+                    Modifier.fillMaxWidth()
+            )
+
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        8.dp
+                    )
+            )
+
+
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                horizontalArrangement =
+                    Arrangement.spacedBy(
+                        8.dp
+                    )
+            ) {
+
+                Button(
+                    onClick = {
+                        selectedObservationKind =
+                            "station_call"
+                    },
+
+                    modifier =
+                        Modifier
+                            .weight(
+                                1f
+                            )
+                            .height(
+                                48.dp
+                            )
+                ) {
+
+                    Text(
+                        "Station call",
+                        fontSize =
+                            12.sp
+                    )
+                }
+
+
+                Button(
+                    onClick = {
+                        selectedObservationKind =
+                            "running_event"
+                    },
+
+                    modifier =
+                        Modifier
+                            .weight(
+                                1f
+                            )
+                            .height(
+                                48.dp
+                            )
+                ) {
+
+                    Text(
+                        "Running event",
+                        fontSize =
+                            12.sp
+                    )
+                }
+            }
+
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        8.dp
+                    )
+            )
+
+
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                horizontalArrangement =
+                    Arrangement.spacedBy(
+                        8.dp
+                    )
+            ) {
+
+                Button(
+                    onClick = {
+                        selectedObservationKind =
+                            "train_issue"
+                    },
+
+                    modifier =
+                        Modifier
+                            .weight(
+                                1f
+                            )
+                            .height(
+                                48.dp
+                            )
+                ) {
+
+                    Text(
+                        "Train issue",
+                        fontSize =
+                            12.sp
+                    )
+                }
+
+
+                Button(
+                    onClick = {
+                        selectedObservationKind =
+                            "other"
+                    },
+
+                    modifier =
+                        Modifier
+                            .weight(
+                                1f
+                            )
+                            .height(
+                                48.dp
+                            )
+                ) {
+
+                    Text(
+                        "Other",
+                        fontSize =
+                            12.sp
+                    )
+                }
+            }
+
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        10.dp
+                    )
+            )
+
+
+            Text(
+                text =
+
+                    when (
+                        selectedObservationKind
+                    ) {
+
+                        "station_call" ->
+                            "Selected: Station call"
+
+                        "running_event" ->
+                            "Selected: Running event"
+
+                        "train_issue" ->
+                            "Selected: Train issue"
+
+                        else ->
+                            "Selected: Other"
+                    },
+
+                fontSize =
+                    12.sp,
+
+                fontWeight =
+                    FontWeight.Medium,
+
+                color =
+                    Color(0xFF607080),
+
+                modifier =
+                    Modifier.fillMaxWidth()
+            )
+
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        8.dp
+                    )
+            )
+
+
+            OutlinedTextField(
+                value =
+                    observationNote,
+
+                onValueChange = {
+                    observationNote =
+                        it
+                },
+
+                label = {
+                    Text(
+                        "Notes"
+                    )
+                },
+
+                placeholder = {
+                    Text(
+                        "e.g. wheelchair ramp deployed"
+                    )
+                },
+
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(
+                            105.dp
+                        ),
+
+                maxLines =
+                    3
+            )
+
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        14.dp
+                    )
+            )
+
+
+            Button(
+                onClick = {
+
+                    if (
+                        liveEventId != null
+                    ) {
+
+                        val completeIntent =
+
+                            Intent(
+                                context,
+                                JourneyRecordingService::class.java
+                            ).apply {
+
+                                action =
+                                    JourneyRecordingService
+                                        .ACTION_COMPLETE_EVENT
+
+                                putExtra(
+                                    JourneyRecordingService
+                                        .EXTRA_EVENT_ID,
+                                    liveEventId
+                                )
+
+                                putExtra(
+                                    JourneyRecordingService
+                                        .EXTRA_EVENT_KIND,
+                                    selectedObservationKind
+                                )
+
+                                putExtra(
+                                    JourneyRecordingService
+                                        .EXTRA_EVENT_NOTE,
+                                    observationNote
+                                )
+                            }
+
+
+                        context.startService(
+                            completeIntent
+                        )
+
+
+                        dismissedLiveEventId =
+                            liveEventId
+
+
+                        selectedObservationKind =
+                            "other"
+
+
+                        observationNote =
+                            ""
+                    }
+                },
+
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(
+                            54.dp
+                        )
+            ) {
+
+                Text(
+                    text =
+                        "SAVE",
+
+                    fontWeight =
+                        FontWeight.Bold
+                )
+            }
+
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        8.dp
+                    )
+            )
+
+
+            Button(
+                onClick = {
+
+                    dismissedLiveEventId =
+                        liveEventId
+
+                    recordingPreferences
+                        .edit()
+                        .remove(
+                            JourneyRecordingService
+                                .KEY_PENDING_EVENT_ID
+                        )
+                        .apply()
+
+                    pendingEventId =
+                        null
+
+                    selectedObservationKind =
+                        "other"
+
+                    observationNote =
+                        ""
+                },
+
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(
+                            46.dp
+                        ),
+
+                colors =
+                    ButtonDefaults
+                        .buttonColors(
+
+                            containerColor =
+                                Color(0xFFE1E6EB),
+
+                            contentColor =
+                                Color(0xFF12263A)
+                        )
+            ) {
+
+                Text(
+                    text =
+                        "LATER",
+
+                    fontWeight =
+                        FontWeight.Bold
+                )
+            }
+        }
+
+
+        return
+    }
+
 
     Column(
         modifier =
@@ -1969,6 +2505,484 @@ fun SectionIQHomeScreen() {
                 )
         )
 
+
+        /*
+         * -----------------------------------------------------
+         * REVIEW MARKED OBSERVATIONS
+         * -----------------------------------------------------
+         */
+
+        if (
+            !isRecording
+        ) {
+
+            Button(
+                onClick = {
+
+                    observationScope.launch {
+
+                        pendingObservationsLoading =
+                            true
+
+                        observationError =
+                            null
+
+                        try {
+
+                            pendingObservations =
+
+                                SectionIQSupabase
+                                    .getMarkedObservations()
+
+
+                            pendingObservationsLoaded =
+                                true
+
+                        } catch (
+                            e: Exception
+                        ) {
+
+                            observationError =
+                                "Could not load observations"
+
+                            Log.e(
+                                "SectionIQObservation",
+                                "Could not load marked observations",
+                                e
+                            )
+
+                        } finally {
+
+                            pendingObservationsLoading =
+                                false
+                        }
+                    }
+                },
+
+                enabled =
+                    !pendingObservationsLoading,
+
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(
+                            56.dp
+                        ),
+
+                shape =
+                    RoundedCornerShape(
+                        16.dp
+                    )
+            ) {
+
+                Text(
+                    text =
+                        if (
+                            pendingObservationsLoading
+                        ) {
+                            "Loading observations..."
+                        } else {
+                            "REVIEW OBSERVATIONS"
+                        },
+
+                    fontWeight =
+                        FontWeight.Bold
+                )
+            }
+
+
+            if (
+                pendingObservationsLoaded
+            ) {
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            10.dp
+                        )
+                )
+
+
+                Text(
+                    text =
+
+                        if (
+                            pendingObservations.isEmpty()
+                        ) {
+
+                            "No observations awaiting completion"
+
+                        } else {
+
+                            "${pendingObservations.size} observation" +
+                                    if (
+                                        pendingObservations.size == 1
+                                    ) {
+                                        " to complete"
+                                    } else {
+                                        "s to complete"
+                                    }
+                        },
+
+                    fontSize =
+                        13.sp,
+
+                    fontWeight =
+                        FontWeight.Medium,
+
+                    color =
+                        Color(0xFF607080)
+                )
+            }
+
+
+            if (
+                pendingObservations.isNotEmpty()
+            ) {
+
+                val currentObservation =
+                    pendingObservations.first()
+
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            20.dp
+                        )
+                )
+
+
+                Text(
+                    text =
+                        "Complete observation",
+
+                    fontSize =
+                        18.sp,
+
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            6.dp
+                        )
+                )
+
+
+                Text(
+                    text =
+                        "Observation 1 of ${pendingObservations.size}",
+
+                    fontSize =
+                        13.sp,
+
+                    color =
+                        Color(0xFF607080)
+                )
+
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            16.dp
+                        )
+                )
+
+
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    horizontalArrangement =
+                        Arrangement.spacedBy(
+                            8.dp
+                        )
+                ) {
+
+                    Button(
+                        onClick = {
+                            selectedObservationKind =
+                                "station_call"
+                        },
+
+                        modifier =
+                            Modifier.weight(
+                                1f
+                            )
+                    ) {
+
+                        Text(
+                            "Station call",
+                            fontSize =
+                                12.sp
+                        )
+                    }
+
+
+                    Button(
+                        onClick = {
+                            selectedObservationKind =
+                                "running_event"
+                        },
+
+                        modifier =
+                            Modifier.weight(
+                                1f
+                            )
+                    ) {
+
+                        Text(
+                            "Running event",
+                            fontSize =
+                                12.sp
+                        )
+                    }
+                }
+
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            8.dp
+                        )
+                )
+
+
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    horizontalArrangement =
+                        Arrangement.spacedBy(
+                            8.dp
+                        )
+                ) {
+
+                    Button(
+                        onClick = {
+                            selectedObservationKind =
+                                "train_issue"
+                        },
+
+                        modifier =
+                            Modifier.weight(
+                                1f
+                            )
+                    ) {
+
+                        Text(
+                            "Train issue",
+                            fontSize =
+                                12.sp
+                        )
+                    }
+
+
+                    Button(
+                        onClick = {
+                            selectedObservationKind =
+                                "other"
+                        },
+
+                        modifier =
+                            Modifier.weight(
+                                1f
+                            )
+                    ) {
+
+                        Text(
+                            "Other",
+                            fontSize =
+                                12.sp
+                        )
+                    }
+                }
+
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            12.dp
+                        )
+                )
+
+
+                Text(
+                    text =
+                        "Selected: " +
+                                when (
+                                    selectedObservationKind
+                                ) {
+
+                                    "station_call" ->
+                                        "Station call"
+
+                                    "running_event" ->
+                                        "Running event"
+
+                                    "train_issue" ->
+                                        "Train issue"
+
+                                    else ->
+                                        "Other"
+                                },
+
+                    fontSize =
+                        13.sp,
+
+                    fontWeight =
+                        FontWeight.Medium
+                )
+
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            12.dp
+                        )
+                )
+
+
+                OutlinedTextField(
+                    value =
+                        observationNote,
+
+                    onValueChange = {
+                        observationNote =
+                            it
+                    },
+
+                    label = {
+                        Text(
+                            "What happened?"
+                        )
+                    },
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    minLines =
+                        3
+                )
+
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            14.dp
+                        )
+                )
+
+
+                Button(
+                    onClick = {
+
+                        observationScope.launch {
+
+                            observationError =
+                                null
+
+                            try {
+
+                                SectionIQSupabase
+                                    .completeObservation(
+                                        observationId =
+                                            currentObservation.id,
+
+                                        eventKind =
+                                            selectedObservationKind,
+
+                                        freeText =
+                                            observationNote
+                                    )
+
+
+                                pendingObservations =
+
+                                    pendingObservations
+                                        .filter {
+                                            it.id !=
+                                                    currentObservation.id
+                                        }
+
+
+                                selectedObservationKind =
+                                    "other"
+
+
+                                observationNote =
+                                    ""
+
+                            } catch (
+                                e: Exception
+                            ) {
+
+                                observationError =
+                                    "Could not complete observation"
+
+                                Log.e(
+                                    "SectionIQObservation",
+                                    "Observation completion failed",
+                                    e
+                                )
+                            }
+                        }
+                    },
+
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(
+                                56.dp
+                            )
+                ) {
+
+                    Text(
+                        text =
+                            "COMPLETE OBSERVATION",
+
+                        fontWeight =
+                            FontWeight.Bold
+                    )
+                }
+            }
+
+            if (
+                observationError != null
+            ) {
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            8.dp
+                        )
+                )
+
+
+                Text(
+                    text =
+                        observationError
+                            ?: "",
+
+                    fontSize =
+                        13.sp,
+
+                    color =
+                        Color(0xFFB3261E)
+                )
+            }
+
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        24.dp
+                    )
+            )
+        }
 
         /*
          * -----------------------------------------------------
