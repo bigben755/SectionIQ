@@ -225,10 +225,74 @@ class MainActivity : ComponentActivity() {
                         Color(0xFFF4F7FA)
                 ) {
 
-                    SectionIQHomeScreen()
+                    SectionIQRootScreen()
                 }
             }
         }
+    }
+}
+
+
+@Composable
+fun SectionIQRootScreen() {
+    val context = LocalContext.current
+    val preferences = remember {
+        context.getSharedPreferences(
+            "sectioniq_preferences",
+            Context.MODE_PRIVATE
+        )
+    }
+    var disclosureAccepted by remember {
+        mutableStateOf(
+            preferences.getBoolean(
+                "location_disclosure_accepted",
+                false
+            )
+        )
+    }
+
+    if (!disclosureAccepted) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color(0xFFF4F7FA)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "Location use in SectionIQ",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF10243A)
+                )
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    text = "SectionIQ records precise location while you actively record a railway journey. Recording continues through a foreground service if you minimise or lock the phone, so the full journey can be measured. Location points are uploaded securely to SectionIQ to analyse running time, station dwell and operational performance. Recording starts only when you press START and stops when you press STOP.",
+                    fontSize = 16.sp,
+                    color = Color(0xFF334E68)
+                )
+                Spacer(Modifier.height(20.dp))
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        preferences.edit()
+                            .putBoolean(
+                                "location_disclosure_accepted",
+                                true
+                            )
+                            .apply()
+                        disclosureAccepted = true
+                    }
+                ) {
+                    Text("Continue")
+                }
+            }
+        }
+    } else {
+        SectionIQHomeScreen()
     }
 }
 

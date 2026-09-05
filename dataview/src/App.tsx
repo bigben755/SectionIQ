@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import JourneyMap from './JourneyMap'
 import DemoView from './DemoView'
+import HeadcodeAnalysis from './HeadcodeAnalysis'
 
 type Journey = {
   id: string
@@ -125,6 +126,7 @@ function App() {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [demoMode, setDemoMode] = useState(false)
+  const [headcodeMode, setHeadcodeMode] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -233,6 +235,10 @@ function App() {
     return <DemoView email={session.user.email ?? ''} role={role} onExit={() => setDemoMode(false)} onSignOut={() => supabase.auth.signOut()} />
   }
 
+  if (headcodeMode) {
+    return <div className="app-shell"><header className="topbar"><Logo compact /><nav><button className="demo-nav-button active">Headcodes</button></nav><div className="user-menu"><span>{session.user.email}</span><small>{role}</small><button onClick={() => supabase.auth.signOut()}>Sign out</button></div></header><HeadcodeAnalysis onBack={() => setHeadcodeMode(false)} /><footer className="app-footer">SectionIQ — built by Bodge Job Apps</footer></div>
+  }
+
   const completeCount = journeys.filter((j) => j.status === 'complete').length
   const matchedCount = Object.keys(matches).length
   const selected = journeys.find((j) => j.id === selectedId) ?? null
@@ -242,7 +248,7 @@ function App() {
     <div className="app-shell">
       <header className="topbar">
         <Logo compact />
-        <nav><a className="active" href="#overview">Overview</a><a href="#journeys">Journeys</a><a href="#performance">Performance</a><a href="#pathfinder">Pathfinder</a><button className="demo-nav-button" onClick={() => setDemoMode(true)}>Demo</button></nav>
+        <nav><a className="active" href="#overview">Overview</a><a href="#journeys">Journeys</a><button className="demo-nav-button" onClick={() => setHeadcodeMode(true)}>Headcodes</button><a href="#performance">Performance</a><a href="#pathfinder">Pathfinder</a><button className="demo-nav-button" onClick={() => setDemoMode(true)}>Demo</button></nav>
         <div className="user-menu"><span>{session.user.email}</span><small>{role}</small><button onClick={() => supabase.auth.signOut()}>Sign out</button></div>
       </header>
 
