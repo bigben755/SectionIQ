@@ -1,0 +1,24 @@
+# Android Studio / IntelliJ
+*.iml
+.idea/
+.gradle/
+
+# Local machine configuration / secrets
+local.properties
+/local.properties
+.env
+.env.*
+*.jks
+*.keystore
+keystore.properties
+
+# Build outputs
+build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# OS files
+.DS_Store
+Thumbs.db
