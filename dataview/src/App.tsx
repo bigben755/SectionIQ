@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
+import JourneyMap from './JourneyMap'
 
 type Journey = {
   id: string
@@ -274,6 +275,11 @@ function App() {
             {!filtered.length && <tr><td colSpan={6} className="empty-cell">No journeys match the current filters.</td></tr>}
           </tbody></table></div>
         </section>
+
+        <JourneyMap
+          journeyId={selectedId}
+          headcode={selected?.entered_headcode ?? selectedMatch?.headcode ?? null}
+        />
 
         <section className="detail-grid" id="performance">
           <article className="panel">
