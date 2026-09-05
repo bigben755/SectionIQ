@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import L from 'leaflet'
 import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
+import Demo1N53Cohort from './Demo1N53Cohort'
 import { supabase } from './supabase'
 
 type Props = {
@@ -322,6 +323,8 @@ export default function DemoLiveJourney({ email, role, onExit, onSignOut, onShow
             </div>
           </aside>
         </section>
+
+        <Demo1N53Cohort />
 
         <section className="panel demo-poap actual-poap">
           <div className="panel-heading"><div><p className="eyebrow">Performance on a page</p><h2>1N53 field-test conclusion</h2></div></div>
