@@ -531,6 +531,10 @@ class JourneyRecordingService : Service() {
                                             0f
                                         },
 
+                                    speedAvailable =
+
+                                        hasSpeed,
+
                                     bearingDegrees =
 
                                         if (

@@ -74,6 +74,8 @@ data class JourneyPoint(
 
     val speedMetresPerSecond: Float,
 
+    val speedAvailable: Boolean,
+
     val bearingDegrees: Float,
 
     val altitudeMetres: Double?
@@ -2167,9 +2169,26 @@ fun appendJourneyPoint(
             )
 
             put(
-                "speed_mps",
-                point.speedMetresPerSecond
+                "speed_available",
+                point.speedAvailable
             )
+
+            if (
+                point.speedAvailable
+            ) {
+
+                put(
+                    "speed_mps",
+                    point.speedMetresPerSecond
+                )
+
+            } else {
+
+                put(
+                    "speed_mps",
+                    JSONObject.NULL
+                )
+            }
 
             put(
                 "bearing_deg",
