@@ -1,0 +1,46 @@
+name: Check SectionIQ Android closed-test build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle/**'
+      - 'gradle.properties'
+      - '.github/workflows/android-closed-test-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Configure public SectionIQ cloud values
+        run: |
+          cat > local.properties <<'EOF'
+          SUPABASE_URL=https://ordpdwenpspiyfvovnvt.supabase.co
+          SUPABASE_PUBLISHABLE_KEY=sb_publishable_hBwrln84AI8bM2G2ACE9lw_FW-tmrJl
+          EOF
+      - name: Make Gradle executable
+        run: chmod +x gradlew
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+      - name: Build release app bundle
+        run: ./gradlew bundleRelease
+      - name: Upload unsigned release bundle for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: sectioniq-closed-test-unsigned-aab
+          path: app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
