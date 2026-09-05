@@ -409,6 +409,10 @@ class JourneyRecordingService : Service() {
                 )
 
                 .putInt(
+                    KEY_EVENT_MARK_COUNT,
+                    0
+                )
+                .putInt(
                     KEY_PATHFINDER_MARK_COUNT,
                     0
                 )
