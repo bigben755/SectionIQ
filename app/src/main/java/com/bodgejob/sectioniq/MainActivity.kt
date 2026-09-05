@@ -759,6 +759,19 @@ fun SectionIQHomeScreen() {
     }
 
 
+    var eventMarkCount by remember {
+
+        mutableStateOf(
+            recordingPreferences
+                .getInt(
+                    JourneyRecordingService
+                        .KEY_EVENT_MARK_COUNT,
+                    0
+                )
+        )
+    }
+
+
     var savedJourneyCount by remember {
 
         mutableStateOf(
@@ -811,6 +824,16 @@ fun SectionIQHomeScreen() {
                     .getInt(
                         JourneyRecordingService
                             .KEY_POINT_COUNT,
+                        0
+                    )
+
+
+            eventMarkCount =
+
+                recordingPreferences
+                    .getInt(
+                        JourneyRecordingService
+                            .KEY_EVENT_MARK_COUNT,
                         0
                     )
 
@@ -1834,6 +1857,108 @@ fun SectionIQHomeScreen() {
                     }
                 }
             }
+        }
+
+
+        if (
+            isRecording
+        ) {
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        24.dp
+                    )
+            )
+
+
+            Button(
+                onClick = {
+
+                    val markIntent =
+
+                        Intent(
+                            context,
+                            JourneyRecordingService::class.java
+                        ).apply {
+
+                            action =
+                                JourneyRecordingService
+                                    .ACTION_MARK_EVENT
+                        }
+
+
+                    context.startService(
+                        markIntent
+                    )
+                },
+
+                modifier =
+
+                    Modifier
+                        .fillMaxWidth()
+                        .height(
+                            76.dp
+                        ),
+
+                shape =
+                    RoundedCornerShape(
+                        18.dp
+                    ),
+
+                colors =
+                    ButtonDefaults
+                        .buttonColors(
+
+                            containerColor =
+                                Color(0xFF1E6FA8),
+
+                            contentColor =
+                                Color.White
+                        )
+            ) {
+
+                Text(
+                    text =
+                        "MARK EVENT",
+
+                    fontSize =
+                        22.sp,
+
+                    fontWeight =
+                        FontWeight.Bold
+                )
+            }
+
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        10.dp
+                    )
+            )
+
+
+            Text(
+                text =
+                    "$eventMarkCount observation" +
+                            if (
+                                eventMarkCount == 1
+                            ) {
+                                " marked"
+                            } else {
+                                "s marked"
+                            },
+
+                fontSize =
+                    13.sp,
+
+                fontWeight =
+                    FontWeight.Medium,
+
+                color =
+                    Color(0xFF607080)
+            )
         }
 
 

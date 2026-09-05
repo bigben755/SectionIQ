@@ -169,6 +169,59 @@ private data class CloudJourneyPointRow(
 
 /*
  * ---------------------------------------------------------
+ * MANAGER OBSERVATION CLOUD MODELS
+ * ---------------------------------------------------------
+ */
+
+
+@Serializable
+private data class CloudJourneyObservationInsert(
+
+    val id: String,
+
+    @SerialName("journey_id")
+    val journeyId: String,
+
+    @SerialName("device_id")
+    val deviceId: String,
+
+    @SerialName("observed_at")
+    val observedAt: String,
+
+    val latitude: Double?,
+
+    val longitude: Double?,
+
+    @SerialName("accuracy_m")
+    val accuracyMetres: Float?,
+
+    val source: String,
+
+    @SerialName("entry_status")
+    val entryStatus: String,
+
+    @SerialName("event_kind")
+    val eventKind: String,
+
+    @SerialName("evidence_source")
+    val evidenceSource: String
+)
+
+
+@Serializable
+private data class CloudJourneyObservationRow(
+
+    val id: String,
+
+    @SerialName("journey_id")
+    val journeyId: String,
+
+    @SerialName("device_id")
+    val deviceId: String
+)
+
+/*
+ * ---------------------------------------------------------
  * PATHFINDER CLOUD MODELS
  * ---------------------------------------------------------
  */
@@ -277,6 +330,9 @@ private data class ParsedJourney(
     val points:
     List<ParsedJourneyPoint>,
 
+    val observations:
+    List<ParsedJourneyObservation>,
+
     val pathfinderMarks:
     List<ParsedPathfinderMark>
 )
@@ -309,6 +365,29 @@ private data class ParsedJourneyPoint(
     val altitudeMetres: Double?
 )
 
+
+private data class ParsedJourneyObservation(
+
+    val id: String,
+
+    val sessionId: String,
+
+    val timestampMs: Long,
+
+    val latitude: Double?,
+
+    val longitude: Double?,
+
+    val accuracyMetres: Float?,
+
+    val source: String,
+
+    val entryStatus: String,
+
+    val eventKind: String,
+
+    val evidenceSource: String
+)
 
 private data class ParsedPathfinderMark(
 
@@ -651,6 +730,197 @@ object JourneyUploader {
             )
         }
 
+
+        /*
+         * -----------------------------------------------------
+         * MANAGER OBSERVATIONS
+         * -----------------------------------------------------
+         */
+
+        if (
+            parsedJourney
+                .observations
+                .isNotEmpty()
+        ) {
+
+            val existingObservations =
+
+                client.postgrest[
+                    "journey_observations"
+                ]
+                    .select {
+
+                        filter {
+
+                            eq(
+                                "journey_id",
+                                parsedJourney.sessionId
+                            )
+                        }
+                    }
+                    .decodeList<
+                            CloudJourneyObservationRow
+                            >()
+
+
+            /*
+             * A journey and all its observations must remain
+             * associated with the same registered device.
+             */
+            existingObservations
+                .forEach { observation ->
+
+                    if (
+                        observation.deviceId !=
+                        device.id
+                    ) {
+
+                        error(
+                            "Journey observation belongs to a different device"
+                        )
+                    }
+                }
+
+
+            val existingIds =
+
+                existingObservations
+                    .map {
+                        it.id
+                    }
+                    .toSet()
+
+
+            val missingObservations =
+
+                parsedJourney
+                    .observations
+                    .filter {
+                        it.id !in existingIds
+                    }
+
+
+            val cloudObservations =
+
+                missingObservations
+                    .map { observation ->
+
+                        CloudJourneyObservationInsert(
+
+                            id =
+                                observation.id,
+
+                            journeyId =
+                                parsedJourney.sessionId,
+
+                            deviceId =
+                                device.id,
+
+                            observedAt =
+                                instantString(
+                                    observation.timestampMs
+                                ),
+
+                            latitude =
+                                observation.latitude,
+
+                            longitude =
+                                observation.longitude,
+
+                            accuracyMetres =
+                                observation.accuracyMetres,
+
+                            source =
+                                observation.source,
+
+                            entryStatus =
+                                observation.entryStatus,
+
+                            eventKind =
+                                observation.eventKind,
+
+                            evidenceSource =
+                                observation.evidenceSource
+                        )
+                    }
+
+
+            if (
+                cloudObservations.isNotEmpty()
+            ) {
+
+                client.postgrest[
+                    "journey_observations"
+                ]
+                    .insert(
+                        cloudObservations
+                    )
+            }
+
+
+            /*
+             * Read back before considering the journey fully
+             * synced. This makes retries safe and prevents a
+             * lost observation being hidden by an uploaded
+             * marker on the local journey file.
+             */
+            val finalCloudObservations =
+
+                client.postgrest[
+                    "journey_observations"
+                ]
+                    .select {
+
+                        filter {
+
+                            eq(
+                                "journey_id",
+                                parsedJourney.sessionId
+                            )
+                        }
+                    }
+                    .decodeList<
+                            CloudJourneyObservationRow
+                            >()
+
+
+            val expectedObservationIds =
+
+                parsedJourney
+                    .observations
+                    .map {
+                        it.id
+                    }
+                    .toSet()
+
+
+            val finalObservationIds =
+
+                finalCloudObservations
+                    .map {
+                        it.id
+                    }
+                    .toSet()
+
+
+            if (
+                !finalObservationIds.containsAll(
+                    expectedObservationIds
+                )
+            ) {
+
+                error(
+                    "Not all journey observations reached the cloud"
+                )
+            }
+
+
+            Log.d(
+                "SectionIQCloud",
+                "Journey observations verified: " +
+                        "${expectedObservationIds.size}"
+            )
+        }
 
         /*
          * -----------------------------------------------------
@@ -1102,12 +1372,18 @@ object JourneyUploader {
                     >()
 
 
+        val observations =
+
+            mutableListOf<
+                    ParsedJourneyObservation
+                    >()
+
+
         val pathfinderMarks =
 
             mutableListOf<
                     ParsedPathfinderMark
                     >()
-
 
         file.forEachLine { line ->
 
@@ -1283,6 +1559,77 @@ object JourneyUploader {
                         )
                 }
 
+
+                /*
+                 * ---------------------------------------------
+                 * MANAGER OBSERVATION MARK
+                 * ---------------------------------------------
+                 */
+
+                "journey_observation_mark" -> {
+
+                    observations +=
+
+                        ParsedJourneyObservation(
+
+                            id =
+                                json.getString(
+                                    "id"
+                                ),
+
+                            sessionId =
+                                json.getString(
+                                    "session_id"
+                                ),
+
+                            timestampMs =
+                                json.getLong(
+                                    "timestamp_ms"
+                                ),
+
+                            latitude =
+                                optionalDouble(
+                                    json,
+                                    "latitude"
+                                ),
+
+                            longitude =
+                                optionalDouble(
+                                    json,
+                                    "longitude"
+                                ),
+
+                            accuracyMetres =
+                                optionalFloat(
+                                    json,
+                                    "accuracy_m"
+                                ),
+
+                            source =
+                                json.optString(
+                                    "source",
+                                    "manager_collector"
+                                ),
+
+                            entryStatus =
+                                json.optString(
+                                    "entry_status",
+                                    "marked"
+                                ),
+
+                            eventKind =
+                                json.optString(
+                                    "event_kind",
+                                    "other"
+                                ),
+
+                            evidenceSource =
+                                json.optString(
+                                    "evidence_source",
+                                    "direct_observation"
+                                )
+                        )
+                }
 
                 /*
                  * ---------------------------------------------
@@ -1489,6 +1836,8 @@ object JourneyUploader {
             points =
                 points,
 
+            observations =
+                observations,
             pathfinderMarks =
                 pathfinderMarks
         )

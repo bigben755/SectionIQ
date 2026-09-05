@@ -39,6 +39,8 @@ class JourneyRecordingService : Service() {
         const val ACTION_STOP =
             "com.bodgejob.sectioniq.action.STOP_JOURNEY"
 
+        const val ACTION_MARK_EVENT =
+            "com.bodgejob.sectioniq.action.MARK_EVENT"
         const val ACTION_MARK_STATION =
             "com.bodgejob.sectioniq.action.MARK_STATION"
 
@@ -56,6 +58,8 @@ class JourneyRecordingService : Service() {
         const val KEY_POINT_COUNT =
             "point_count"
 
+        const val KEY_EVENT_MARK_COUNT =
+            "event_mark_count"
         const val KEY_STARTED_ELAPSED =
             "started_elapsed"
 
@@ -161,6 +165,8 @@ class JourneyRecordingService : Service() {
     private var pointCount =
         0
 
+    private var eventMarkCount =
+        0
 
     private var pathfinderMarkCount =
         0
@@ -237,6 +243,12 @@ class JourneyRecordingService : Service() {
 
                     startJourneyRecording()
                 }
+            }
+
+
+            ACTION_MARK_EVENT -> {
+
+                markJourneyEvent()
             }
 
 
@@ -346,6 +358,8 @@ class JourneyRecordingService : Service() {
             pointCount =
                 0
 
+            eventMarkCount =
+                0
 
             pathfinderMarkCount =
                 0
@@ -736,6 +750,235 @@ class JourneyRecordingService : Service() {
         }
     }
 
+
+    /*
+     * ---------------------------------------------------------
+     * MANAGER - MARK EVENT
+     * ---------------------------------------------------------
+     */
+
+    private fun markJourneyEvent() {
+
+        if (
+            !isCurrentlyRecording()
+        ) {
+            return
+        }
+
+
+        val sessionId =
+            currentSessionId
+                ?: return
+
+
+        val file =
+            currentJourneyFile
+                ?: return
+
+
+        val point =
+            lastJourneyPoint
+
+
+        val markId =
+            UUID.randomUUID()
+                .toString()
+
+
+        val observedAtMs =
+            System.currentTimeMillis()
+
+
+        val sequenceNumber =
+
+            if (
+                point != null &&
+                pointCount > 0
+            ) {
+                pointCount - 1
+            } else {
+                null
+            }
+
+
+        val deviceId =
+            getCloudDeviceId(
+                this
+            )
+
+
+        val record =
+
+            JSONObject().apply {
+
+                put(
+                    "record_type",
+                    "journey_observation_mark"
+                )
+
+                put(
+                    "schema_version",
+                    1
+                )
+
+                put(
+                    "id",
+                    markId
+                )
+
+                put(
+                    "session_id",
+                    sessionId
+                )
+
+                put(
+                    "device_id",
+                    deviceId
+                        ?: JSONObject.NULL
+                )
+
+                put(
+                    "timestamp_ms",
+                    observedAtMs
+                )
+
+                put(
+                    "gps_timestamp_ms",
+                    point?.timestamp
+                        ?: JSONObject.NULL
+                )
+
+                put(
+                    "sequence_number",
+                    sequenceNumber
+                        ?: JSONObject.NULL
+                )
+
+                put(
+                    "latitude",
+                    point?.latitude
+                        ?: JSONObject.NULL
+                )
+
+                put(
+                    "longitude",
+                    point?.longitude
+                        ?: JSONObject.NULL
+                )
+
+                put(
+                    "accuracy_m",
+                    point?.accuracyMetres
+                        ?: JSONObject.NULL
+                )
+
+                put(
+                    "speed_available",
+                    point?.speedAvailable
+                        ?: JSONObject.NULL
+                )
+
+                put(
+                    "speed_mps",
+
+                    if (
+                        point?.speedAvailable == true
+                    ) {
+                        point.speedMetresPerSecond
+                    } else {
+                        JSONObject.NULL
+                    }
+                )
+
+                put(
+                    "speed_accuracy_mps",
+                    point
+                        ?.speedAccuracyMetresPerSecond
+                        ?: JSONObject.NULL
+                )
+
+                put(
+                    "elapsed_realtime_nanos",
+                    point
+                        ?.elapsedRealtimeNanos
+                        ?: JSONObject.NULL
+                )
+
+                put(
+                    "bearing_accuracy_deg",
+                    point
+                        ?.bearingAccuracyDegrees
+                        ?: JSONObject.NULL
+                )
+
+                put(
+                    "vertical_accuracy_m",
+                    point
+                        ?.verticalAccuracyMetres
+                        ?: JSONObject.NULL
+                )
+
+                put(
+                    "entry_status",
+                    "marked"
+                )
+
+                put(
+                    "event_kind",
+                    "other"
+                )
+
+                put(
+                    "evidence_source",
+                    "direct_observation"
+                )
+
+                put(
+                    "source",
+                    "manager_collector"
+                )
+            }
+
+
+        try {
+
+            file.appendText(
+                record.toString() +
+                        "\n"
+            )
+
+
+            eventMarkCount++
+
+
+            recordingPreferences
+                .edit()
+                .putInt(
+                    KEY_EVENT_MARK_COUNT,
+                    eventMarkCount
+                )
+                .apply()
+
+
+            updateNotification()
+
+
+            Log.d(
+                "SectionIQObservation",
+                "Event marked: $markId"
+            )
+
+        } catch (
+            e: Exception
+        ) {
+
+            Log.e(
+                "SectionIQObservation",
+                "Failed to save event mark",
+                e
+            )
+        }
+    }
 
     /*
      * ---------------------------------------------------------
